@@ -24,7 +24,7 @@ jobs:
           pip install requests twilio python-dotenv
 
       - name: Run the script
-        run: python script.py
+        run: python baselinker-to-whatsapp.py
         env:
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
