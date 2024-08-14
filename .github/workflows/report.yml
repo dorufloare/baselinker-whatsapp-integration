@@ -2,7 +2,7 @@ name: report
 
 on:
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '0 15 * * *'
   workflow_dispatch:  
 
 jobs:
