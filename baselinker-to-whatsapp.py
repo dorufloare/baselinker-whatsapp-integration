@@ -6,6 +6,9 @@ from twilio.rest import Client  # type: ignore
 import datetime
 from dotenv import load_dotenv # type: ignore
 import os
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+from twilio.base.exceptions import TwilioRestException
 
 load_dotenv()
 
@@ -33,6 +36,40 @@ def estimated_delivery_time(unix_timestamp):
 
     new_date = date_time + datetime.timedelta(days=days_to_add + extra_days)
     return new_date.strftime('%Y-%m-%d')
+
+# Google drive
+
+gauth = GoogleAuth()
+
+gauth.LoadCredentialsFile("mycreds.txt")
+
+if gauth.credentials is None:
+    gauth.LocalWebserverAuth()  
+elif gauth.access_token_expired:
+    gauth.Refresh()
+else:
+    gauth.Authorize()
+gauth.SaveCredentialsFile("mycreds.txt")
+
+drive = GoogleDrive(gauth)
+
+def get_url(filename):
+   
+    file = drive.CreateFile({'title': filename})
+    file.SetContentFile(filename)
+    file.Upload()
+
+    file.InsertPermission({
+        'type': 'anyone',
+        'value': 'anyone',
+        'role': 'reader'
+    })
+
+
+    public_url = file['alternateLink']
+    print(public_url);
+    return public_url
+
 
 # Time constants
 seconds_per_hour = 3600
@@ -75,8 +112,7 @@ print(format_json(personal_orders))
 # For each order we need the invoice
 for order in personal_orders:
     order_id = order.get("order_id")
-
-    '''
+  
     invoice_data = {
         "method": 'getInvoices',
         "parameters": json.dumps({
@@ -114,7 +150,9 @@ for order in personal_orders:
 
     with open(output_pdf_path, "wb") as pdf_file:
         pdf_file.write(invoice_pdf_data)
-    '''
+    
+    pdf_url = get_url(output_pdf_path);
+
     # Get the order page
 
     order_page_url = order.get('order_page')
@@ -152,7 +190,7 @@ for order in personal_orders:
         f"AWB: {package_numbers} \n"
         f"Livrare estimata: {estimated_delivery} \n"
         "Plata: ramburs\n\n"
-        f"Factura si alte detalii se gasesc pe pagina: {order_page_url}\n\n"
+        f"Factura: {pdf_url}\n\n"
         "Spor la lucru!"
     )
 
@@ -162,12 +200,14 @@ for order in personal_orders:
     # Else we are sending it to the client
 
     recipient = os.getenv('PERSONAL_PHONE_NUMBER') if TEST_MODE else ''
+    
 
+    # Try sending the WhatsApp message
     message = client.messages.create(
-        from_='whatsapp:+14155238886',
+        from_='+18564741965',
         body=message_body,
-        to=f'whatsapp:{recipient}'
+        to=recipient
     )
-    print(f"Message sent with SID: {message.sid}")
-    print(message.to)
+    print(f"WhatsApp message sent with SID: {message.sid}")
 
+   
