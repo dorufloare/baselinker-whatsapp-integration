@@ -2,8 +2,8 @@ name: report
 
 on:
   schedule:
-    - cron: '0 15 * * *'
-  workflow_dispatch:  
+    - cron: '0 6-18/3 * * *' # Runs every 3 hours between 06:00 and 18:00
+  workflow_dispatch:
 
 jobs:
   run-script:
@@ -16,12 +16,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.8' 
+          python-version: '3.8'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests twilio python-dotenv
+          pip install requests twilio python-dotenv pydrive
+
+      - name: Create client_secrets.json
+        run: |
+          echo ${{ secrets.CLIENT_SECRETS_BASE64 }} | base64 --decode > client_secrets.json
+
+      - name: Create mycreds.txt
+        run: |
+          echo ${{ secrets.MYCREDS_BASE64 }} | base64 --decode > mycreds.txt
 
       - name: Run the script
         run: python baselinker-to-whatsapp.py
@@ -30,3 +38,5 @@ jobs:
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
           X_BLTOKEN: ${{ secrets.X_BLTOKEN }}
           PERSONAL_PHONE_NUMBER: ${{ secrets.PERSONAL_PHONE_NUMBER }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          UPLOAD_URL: ${{ secrets.UPLOAD_URL }}
