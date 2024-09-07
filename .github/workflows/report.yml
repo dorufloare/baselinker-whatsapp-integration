@@ -2,7 +2,7 @@ name: report
 
 on:
   schedule:
-    - cron: '0 6-18/3 * * *'  # Every 3 hours between 6 AM and 6 PM
+    - cron: '0 6-21/3 * * *'  # Every 3 hours between 6 AM and 6 PM
   workflow_dispatch:
 
 jobs:
@@ -26,8 +26,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests twilio python-dotenv pydrive
 
-      # Step 4: Run the script
-      # The script should modify the `orders.txt` file
+      # Step 4: Create client_secrets.json and mycreds.txt from base64 environment variables
+      - name: Create base64 files
+        run: |
+          echo "${{ secrets.CLIENT_SECRETS_BASE64 }}" | base64 -d > client_secrets.json
+          echo "${{ secrets.MYCREDS_BASE64 }}" | base64 -d > mycreds.txt
+
+      # Step 5: Run the script
       - name: Run the script
         run: python baselinker-to-whatsapp.py
         env:
@@ -38,7 +43,7 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           UPLOAD_URL: ${{ secrets.UPLOAD_URL }}
 
-      # Step 5: Commit and push changes back to the repository (persist orders.txt)
+      # Step 6: Commit and push updated orders.txt
       - name: Commit and push updated orders.txt
         run: |
           git config --global user.email "github-actions@github.com"
