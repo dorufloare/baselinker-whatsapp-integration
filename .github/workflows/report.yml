@@ -34,7 +34,7 @@ jobs:
 
       # Step 5: Run the script
       - name: Run the script
-        run: python baselinker-to-whatsapp.py
+        run: main.py
         env:
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
