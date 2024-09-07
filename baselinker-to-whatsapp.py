@@ -1,10 +1,10 @@
-import requests  # type: ignore
+import requests  
 import json
 import time
 import base64
-from twilio.rest import Client  # type: ignore
+from twilio.rest import Client 
 import datetime
-from dotenv import load_dotenv # type: ignore
+from dotenv import load_dotenv 
 import os
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -21,7 +21,6 @@ def format_json(my_json):
 def estimated_delivery_time(unix_timestamp):
     date_time = datetime.datetime.fromtimestamp(unix_timestamp)
 
-    # Check the hour of the timestamp
     if date_time.hour < 15:
         days_to_add = 1
     else:
@@ -29,7 +28,7 @@ def estimated_delivery_time(unix_timestamp):
 
     current_day = date_time.weekday()  
     
-    if current_day + days_to_add > 4:  
+    if current_day + days_to_add > 4:
         extra_days = 2  
     else:
         extra_days = 0
@@ -37,10 +36,18 @@ def estimated_delivery_time(unix_timestamp):
     new_date = date_time + datetime.timedelta(days=days_to_add + extra_days)
     return new_date.strftime('%Y-%m-%d')
 
-# Google drive
+def load_processed_orders():
+    if not os.path.exists('orders.txt'):
+        return set()
+    with open('orders.txt', 'r') as f:
+        return set(f.read().splitlines())
 
+def save_processed_order(order_id):
+    with open('orders.txt', 'a') as f:
+        f.write(f"{order_id}\n")
+
+# Google Drive authentication
 gauth = GoogleAuth()
-
 gauth.LoadCredentialsFile("mycreds.txt")
 
 if gauth.credentials is None:
@@ -53,9 +60,8 @@ gauth.SaveCredentialsFile("mycreds.txt")
 
 drive = GoogleDrive(gauth)
 
-def get_url(filename):
-   
-    file = drive.CreateFile({'title': filename})
+def get_url(filename, folder_id):
+    file = drive.CreateFile({'title': filename, 'parents': [{'id': folder_id}]})
     file.SetContentFile(filename)
     file.Upload()
 
@@ -65,15 +71,13 @@ def get_url(filename):
         'role': 'reader'
     })
 
-
     public_url = file['alternateLink']
-    print(public_url);
+    print(public_url)
     return public_url
-
 
 # Time constants
 seconds_per_hour = 3600
-update_interval = 24           
+update_interval = 24
 unix_time_since_last_update = int(time.time()) - update_interval * seconds_per_hour
 
 # Twilio
@@ -83,7 +87,6 @@ client = Client(account_sid, auth_token)
 
 # Baselinker API -> getting all the orders
 url = "https://api.baselinker.com/connector.php"
-
 headers = {
     "X-BLToken": os.getenv('X_BLTOKEN'),
     "Content-Type": 'application/x-www-form-urlencoded'
@@ -109,10 +112,18 @@ personal_orders = [
 print(f"Status Code: {response.status_code}")
 print(format_json(personal_orders))
 
-# For each order we need the invoice
+processed_orders = load_processed_orders()
+
+# Folder ID for 'Maide invoices' (Replace with actual folder ID)
+folder_id = '1TSiJuppYSjj-IztAgmSsGTKt0B0cubbN'
+
 for order in personal_orders:
     order_id = order.get("order_id")
-  
+    
+    if str(order_id) in processed_orders:
+        print(f"Order ID {order_id} already processed. Skipping.")
+        continue
+    
     invoice_data = {
         "method": 'getInvoices',
         "parameters": json.dumps({
@@ -121,12 +132,9 @@ for order in personal_orders:
         })
     }
 
-    
-    # Get the invoice ID
     invoice_response = requests.post(url, headers=headers, data=invoice_data)
     invoice_json = invoice_response.json()
 
-    # Check if 'invoices' exists and has at least one item
     if invoice_json.get('invoices') and len(invoice_json['invoices']) > 0:
         invoice_id = invoice_json['invoices'][0].get('invoice_id')
     else:
@@ -140,8 +148,6 @@ for order in personal_orders:
         })
     }
 
-    # Get the invoice pdf from the request and save it
-    
     invoice_file_response = requests.post(url, headers=headers, data=invoice_file_data)
     invoice_file_data_base64 = invoice_file_response.json().get('invoice')
     invoice_pdf_data = base64.b64decode(invoice_file_data_base64)
@@ -151,13 +157,7 @@ for order in personal_orders:
     with open(output_pdf_path, "wb") as pdf_file:
         pdf_file.write(invoice_pdf_data)
     
-    pdf_url = get_url(output_pdf_path);
-
-    # Get the order page
-
-    order_page_url = order.get('order_page')
-
-    # Get the cargus AWB
+    pdf_url = get_url(output_pdf_path, folder_id)
 
     cargus_awb_data = {
         "method": 'getOrderPackages',
@@ -171,43 +171,29 @@ for order in personal_orders:
     
     package_numbers = ', '.join(package.get('courier_package_nr', '') for package in cargus_awb_packages)
 
-    print(package_numbers)
-
-    # Get the estimated delivery
-
     order_time_unix = order.get("date_add")
     estimated_delivery = estimated_delivery_time(order_time_unix)
-
-    # Get the client phone number
-
     client_phone_number = order.get("phone")
-
-    # Write message body
 
     message_body = (
         "🚚 Comanda expediata :) \n\n"
         "Detalii colet: \n\n"
-        f"AWB: {package_numbers} \n"
         f"Livrare estimata: {estimated_delivery} \n"
         "Plata: ramburs\n\n"
         f"Factura: {pdf_url}\n\n"
+        f"AWB: {package_numbers}\n\n"
         "Spor la lucru!"
     )
 
-    #print(message_body);
+    recipient = os.getenv('PERSONAL_PHONE_NUMBER') if TEST_MODE else client_phone_number
 
-    # If the test mode is enabled, we send the message to my personal phone number
-    # Else we are sending it to the client
-
-    recipient = os.getenv('PERSONAL_PHONE_NUMBER') if TEST_MODE else ''
-    
-
-    # Try sending the WhatsApp message
-    message = client.messages.create(
-        from_='+18564741965',
-        body=message_body,
-        to=recipient
-    )
-    print(f"WhatsApp message sent with SID: {message.sid}")
-
-   
+    try:
+        message = client.messages.create(
+            from_='+18564741965',
+            body=message_body,
+            to=recipient
+        )
+        print(f"Message sent with SID: {message.sid}")
+        save_processed_order(order_id)
+    except TwilioRestException as e:
+        print(f"Failed to send message to {recipient}: {e}")

@@ -163,3 +163,4 @@ cython_debug/
 
 mycreds.txt
 client_secrets.json
+.pdf
