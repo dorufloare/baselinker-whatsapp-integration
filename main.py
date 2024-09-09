@@ -77,7 +77,7 @@ def get_url(filename, folder_id):
 
 # Time constants
 seconds_per_hour = 3600
-update_interval = 24
+update_interval = 72
 unix_time_since_last_update = int(time.time()) - update_interval * seconds_per_hour
 
 # Twilio
@@ -169,6 +169,27 @@ for order in personal_orders:
     cargus_awb_response = requests.post(url, headers=headers, data=cargus_awb_data)
     cargus_awb_packages = cargus_awb_response.json().get('packages')
     
+    if (cargus_awb_packages == []):
+        print(f"No AWB found for Order ID: {order_id}. Skipping to the next order.")
+        continue
+    
+    package_id = cargus_awb_packages[0].get('package_id')
+
+    # check if the package is shipped
+    package_data = {
+        "method": "getCourierPackagesStatusHistory",
+        "parameters": json.dumps({
+            "package_ids": [package_id]
+        })
+    }
+
+    package_data_response = requests.post(url, headers=headers, data=package_data).json()
+    package_history = package_data_response.get('packages_history')
+
+    if package_history == None or package_history == []:
+        print(f"Order {order_id} not shipped yet. Skipping to the next order")
+        continue
+
     package_numbers = ', '.join(package.get('courier_package_nr', '') for package in cargus_awb_packages)
 
     order_time_unix = order.get("date_add")
@@ -188,6 +209,7 @@ for order in personal_orders:
     recipient = os.getenv('PERSONAL_PHONE_NUMBER') if TEST_MODE else client_phone_number
 
     try:
+        '''
         message = client.messages.create(
             from_='+18564741965',
             body=message_body,
@@ -195,5 +217,7 @@ for order in personal_orders:
         )
         print(f"Message sent with SID: {message.sid}")
         save_processed_order(order_id)
+        '''
+        
     except TwilioRestException as e:
         print(f"Failed to send message to {recipient}: {e}")
