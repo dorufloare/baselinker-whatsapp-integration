@@ -14,7 +14,7 @@ DELIVERED_ORDER_STATUS_ID = 20507
 
 load_dotenv()
 
-TEST_MODE = False
+TEST_MODE = True
 
 def format_json(my_json):
     formatted_json = json.dumps(my_json, indent=4, ensure_ascii=False)
@@ -79,7 +79,7 @@ def get_url(filename, folder_id):
 
 # Time constants
 seconds_per_hour = 3600
-update_interval = 24
+update_interval = 12
 unix_time_since_last_update = int(time.time()) - update_interval * seconds_per_hour
 
 # Twilio
