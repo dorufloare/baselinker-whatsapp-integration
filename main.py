@@ -79,7 +79,7 @@ def get_url(filename, folder_id):
 
 # Time constants
 seconds_per_hour = 3600
-update_interval = 24
+update_interval = 72
 unix_time_since_last_update = int(time.time()) - update_interval * seconds_per_hour
 
 # Twilio
