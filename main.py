@@ -168,11 +168,11 @@ for order in personal_orders:
 
     cargus_awb_response = requests.post(url, headers=headers, data=cargus_awb_data)
     cargus_awb_packages = cargus_awb_response.json().get('packages')
-    
+    '''
     if (cargus_awb_packages == []):
         print(f"No AWB found for Order ID: {order_id}. Skipping to the next order.")
         continue
-    
+    '''
     package_id = cargus_awb_packages[0].get('package_id')
 
     # check if the package is shipped
