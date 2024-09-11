@@ -10,6 +10,8 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from twilio.base.exceptions import TwilioRestException
 
+DELIVERED_ORDER_STATUS_ID = 20507
+
 load_dotenv()
 
 TEST_MODE = False
@@ -124,6 +126,11 @@ for order in personal_orders:
         print(f"Order ID {order_id} already processed. Skipping.")
         continue
     
+    order_status_id = order.get("order_status_id")
+    if order_status_id != DELIVERED_ORDER_STATUS_ID:
+        print(f"Order ID {order_id} not shipped yet. Skipping")
+        continue
+
     invoice_data = {
         "method": 'getInvoices',
         "parameters": json.dumps({
@@ -168,27 +175,6 @@ for order in personal_orders:
 
     cargus_awb_response = requests.post(url, headers=headers, data=cargus_awb_data)
     cargus_awb_packages = cargus_awb_response.json().get('packages')
-    '''
-    if (cargus_awb_packages == []):
-        print(f"No AWB found for Order ID: {order_id}. Skipping to the next order.")
-        continue
-    '''
-    package_id = cargus_awb_packages[0].get('package_id')
-
-    # check if the package is shipped
-    package_data = {
-        "method": "getCourierPackagesStatusHistory",
-        "parameters": json.dumps({
-            "package_ids": [package_id]
-        })
-    }
-
-    package_data_response = requests.post(url, headers=headers, data=package_data).json()
-    package_history = package_data_response.get('packages_history')
-
-    if package_history == None or package_history == []:
-        print(f"Order {order_id} not shipped yet. Skipping to the next order")
-        continue
 
     package_numbers = ', '.join(package.get('courier_package_nr', '') for package in cargus_awb_packages)
 
