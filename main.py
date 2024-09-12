@@ -196,14 +196,14 @@ for order in personal_orders:
     recipient = os.getenv('PERSONAL_PHONE_NUMBER') if TEST_MODE else client_phone_number
 
     try:
-        '''
+        
         message = client.messages.create(
             from_='+18564741965',
             body=message_body,
             to=recipient
         )
         print(f"Message sent with SID: {message.sid}")
-        print(order_id)'''
+        print(order_id)
         save_processed_order(order_id)
         
         
