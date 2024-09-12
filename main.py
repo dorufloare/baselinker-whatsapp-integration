@@ -45,9 +45,16 @@ def load_processed_orders():
         return set(f.read().splitlines())
 
 def save_processed_order(order_id):
+    # Check if the file already exists and is not empty
+    if os.path.exists('orders.txt') and os.path.getsize('orders.txt') > 0:
+        newline = '\n'
+    else:
+        newline = ''
+    
     with open('orders.txt', 'a') as f:
-        f.write(f"{order_id}\n")
+        f.write(f"{newline}{order_id}\n")
         print(f"{order_id} SAVED")
+
 
 # Google Drive authentication
 gauth = GoogleAuth()
