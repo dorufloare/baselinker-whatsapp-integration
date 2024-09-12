@@ -202,8 +202,8 @@ for order in personal_orders:
             body=message_body,
             to=recipient
         )
-        print(f"Message sent with SID: {message.sid}")'''
-        print(order_id)
+        print(f"Message sent with SID: {message.sid}")
+        print(order_id)'''
         save_processed_order(order_id)
         
         
