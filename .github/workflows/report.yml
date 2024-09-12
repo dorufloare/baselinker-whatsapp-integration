@@ -48,11 +48,14 @@ jobs:
       # Step 6: Commit and push updated orders.txt
       - name: Commit and push updated orders.txt
         run: |
-          git config --global user.email "github-actions@github.com"
-          git config --global user.name "GitHub Actions"
+          # Check if orders.txt has changes
           git add orders.txt
-          git status  # Check the status to confirm orders.txt is staged
-          git diff --exit-code || git commit -m "Update processed orders"
+          git status  # Log git status for debugging
+          git diff --cached --exit-code || git commit -m "Update processed orders"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 7: Clean up unnecessary PDFs (optional)
+      - name: Clean up PDFs
+        run: rm -f factura_*.pdf
