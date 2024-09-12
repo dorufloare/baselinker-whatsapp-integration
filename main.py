@@ -14,7 +14,7 @@ DELIVERED_ORDER_STATUS_ID = 20507
 
 load_dotenv()
 
-TEST_MODE = True
+TEST_MODE = False
 
 def format_json(my_json):
     formatted_json = json.dumps(my_json, indent=4, ensure_ascii=False)
@@ -196,13 +196,13 @@ for order in personal_orders:
     recipient = os.getenv('PERSONAL_PHONE_NUMBER') if TEST_MODE else client_phone_number
 
     try:
-        '''
+        
         message = client.messages.create(
             from_='+18564741965',
             body=message_body,
             to=recipient
         )
-        print(f"Message sent with SID: {message.sid}")'''
+        print(f"Message sent with SID: {message.sid}")
         print(order_id)
         save_processed_order(order_id)
         
