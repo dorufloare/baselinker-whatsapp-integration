@@ -47,6 +47,7 @@ def load_processed_orders():
 def save_processed_order(order_id):
     with open('orders.txt', 'a') as f:
         f.write(f"{order_id}\n")
+        print(f"{order_id} SAVED")
 
 # Google Drive authentication
 gauth = GoogleAuth()
@@ -111,8 +112,8 @@ personal_orders = [
     if order.get("order_source") == "personal"
 ]
 
-print(f"Status Code: {response.status_code}")
-print(format_json(personal_orders))
+#print(f"Status Code: {response.status_code}")
+#print(format_json(personal_orders))
 
 processed_orders = load_processed_orders()
 
